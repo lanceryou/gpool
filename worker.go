@@ -4,7 +4,7 @@ import "runtime"
 
 func newPoolWorker() *poolWorker {
 	pw := &poolWorker{
-		wc: make(chan *worker),
+		wc: make(chan func()),
 	}
 
 	go pw.loop()
@@ -14,30 +14,19 @@ func newPoolWorker() *poolWorker {
 
 // work in go env
 type poolWorker struct {
-	wc chan *worker
+	wc chan func()
 }
 
-type worker struct {
-	fn      func() error
-	retChan chan error
-}
-
-func (w *poolWorker) work(fn func() error) error {
-	ret := make(chan error)
-	w.wc <- &worker{
-		fn:      fn,
-		retChan: ret,
-	}
-	err := <-ret
-	return err
+func (w *poolWorker) work(fn func()) {
+	w.wc <- fn
 }
 
 func (w *poolWorker) loop() {
-	for ch := range w.wc {
-		if ch == nil {
+	for fn := range w.wc {
+		if fn == nil {
 			return
 		}
 
-		ch.retChan <- ch.fn()
+		fn()
 	}
 }

@@ -11,19 +11,19 @@ var (
 )
 
 // Go
-func Go(fn func() error) error {
-	return gp.Go(fn)
+func Go(fn func()) {
+	gp.Go(fn)
 }
 
 var GoPoolMaxGoroutineError = errors.New("reach max goroutine count.")
 
 type GoPoolOptions struct {
-	reject func(fn func() error) error
+	reject func(fn func()) error
 }
 
 func (o *GoPoolOptions) apply() {
 	if o.reject == nil {
-		o.reject = func(func() error) error {
+		o.reject = func(func()) error {
 			return GoPoolMaxGoroutineError
 		}
 	}
@@ -31,7 +31,7 @@ func (o *GoPoolOptions) apply() {
 
 type GoPoolOption func(*GoPoolOptions)
 
-func WithReject(fn func(func() error) error) GoPoolOption {
+func WithReject(fn func(func()) error) GoPoolOption {
 	return func(options *GoPoolOptions) {
 		options.reject = fn
 	}
@@ -66,14 +66,14 @@ type GoPool struct {
 
 // Go pool will try get a goroutine from pool to exec fn
 // if goroutine count reach max count, GoPool will use reject strategy handle.
-func (p *GoPool) Go(fn func() error) error {
+func (p *GoPool) Go(fn func()) error {
 	if atomic.AddUint32(&p.curCount, 1) > p.maxCount {
 		atomic.AddUint32(&p.curCount, -1)
 		return p.opts.reject(fn)
 	}
 	pw := p.poolWorker.Get().(*poolWorker)
-	err := pw.work(fn)
+	pw.work(fn)
 	p.poolWorker.Put(pw)
 	atomic.AddUint32(&p.curCount, -1)
-	return err
+	return nil
 }
