@@ -37,7 +37,7 @@ func WithReject(fn func(func()) error) GoPoolOption {
 	}
 }
 
-func NewGoPool(maxCount uint32, opts ...GoPoolOption) *GoPool {
+func NewGoPool(maxCount int32, opts ...GoPoolOption) *GoPool {
 	var opt GoPoolOptions
 	for _, o := range opts {
 		o(&opt)
@@ -59,21 +59,23 @@ func NewGoPool(maxCount uint32, opts ...GoPoolOption) *GoPool {
 type GoPool struct {
 	poolWorker sync.Pool
 
-	maxCount uint32
-	curCount uint32
+	maxCount int32
+	curCount int32
 	opts     GoPoolOptions
 }
 
 // Go pool will try get a goroutine from pool to exec fn
 // if goroutine count reach max count, GoPool will use reject strategy handle.
 func (p *GoPool) Go(fn func()) error {
-	if atomic.AddUint32(&p.curCount, 1) > p.maxCount {
-		atomic.AddUint32(&p.curCount, -1)
+	if atomic.AddInt32(&p.curCount, 1) > p.maxCount {
+		atomic.AddInt32(&p.curCount, -1)
 		return p.opts.reject(fn)
 	}
 	pw := p.poolWorker.Get().(*poolWorker)
-	pw.work(fn)
-	p.poolWorker.Put(pw)
-	atomic.AddUint32(&p.curCount, -1)
+	pw.work(func() {
+		fn()
+		atomic.AddInt32(&p.curCount, -1)
+		p.poolWorker.Put(pw)
+	})
 	return nil
 }
