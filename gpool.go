@@ -79,3 +79,8 @@ func (p *GoPool) Go(fn func()) error {
 	})
 	return nil
 }
+
+// RunningTasks running tasks count
+func (p *GoPool) RunningTasks() int32 {
+	return atomic.LoadInt32(&p.curCount)
+}
