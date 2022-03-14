@@ -4,7 +4,7 @@ import "runtime"
 
 func newPoolWorker() *poolWorker {
 	pw := &poolWorker{
-		wc: make(chan func(), 8),
+		wc: make(chan func(), 1),
 	}
 
 	go pw.loop()
