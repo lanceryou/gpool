@@ -10,7 +10,7 @@ var (
 	gp = NewGoPool(10000)
 )
 
-// Go
+// Go run fn
 func Go(fn func()) {
 	gp.Go(fn)
 }
@@ -55,7 +55,7 @@ func NewGoPool(maxCount int32, opts ...GoPoolOption) *GoPool {
 	}
 }
 
-// GoPool
+// GoPool go pool
 type GoPool struct {
 	poolWorker sync.Pool
 
